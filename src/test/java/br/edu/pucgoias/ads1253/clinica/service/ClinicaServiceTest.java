@@ -1,7 +1,6 @@
 package br.edu.pucgoias.ads1253.clinica.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,7 +9,9 @@ import br.edu.pucgoias.ads1253.clinica.model.Animal;
 import br.edu.pucgoias.ads1253.clinica.model.Tutor;
 import br.edu.pucgoias.ads1253.clinica.service.exception.CpfDuplicadoException;
 import br.edu.pucgoias.ads1253.clinica.service.exception.RecursoNaoEncontradoException;
+import br.edu.pucgoias.ads1253.clinica.service.exception.TutorComAnimaisException;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,31 +75,52 @@ class ClinicaServiceTest {
     }
 
     // ------------------------------------------------------------------
-    // ETAPA 5 - Escreva os tres testes restantes, seguindo o padrao acima.
+    // ETAPA 5 - Casos escritos pelo aluno.
     // ------------------------------------------------------------------
 
     @Test
     @DisplayName("5. Atualizacao de tutor persiste as alteracoes")
     void atualizacaoDeTutorPersisteAlteracoes() {
-        // Cadastre um tutor, atualize nome e telefone e verifique, apos nova
-        // busca, que as alteracoes foram gravadas e que o identificador nao mudou.
-        fail("Teste a ser escrito pelo aluno");
+        Tutor tutor = servico.cadastrarTutor(novoTutor("Diego Rocha", "44444444444"));
+        Long idOriginal = tutor.getId();
+
+        servico.atualizarTutor(idOriginal, "Diego Rocha Neto", "62988887777");
+
+        Tutor atualizado = servico.buscarTutor(idOriginal);
+        assertEquals(idOriginal, atualizado.getId());
+        assertEquals("Diego Rocha Neto", atualizado.getNome());
+        assertEquals("62988887777", atualizado.getTelefone());
     }
 
     @Test
     @DisplayName("6. Remocao de tutor com animais vinculados lanca TutorComAnimaisException")
     void remocaoDeTutorComAnimaisLancaExcecao() {
-        // Cadastre um tutor, vincule um animal e verifique que a remocao do
-        // tutor lanca TutorComAnimaisException, cuja mensagem deve conter o
-        // identificador do tutor.
-        fail("Teste a ser escrito pelo aluno");
+        Tutor tutor = servico.cadastrarTutor(novoTutor("Elisa Prado", "55555555555"));
+        servico.cadastrarAnimal(tutor.getId(),
+                new Animal("Mimi", "Gato", LocalDate.of(2021, 7, 10)));
+
+        TutorComAnimaisException erro = assertThrows(TutorComAnimaisException.class,
+                () -> servico.removerTutor(tutor.getId()));
+
+        assertTrue(erro.getMessage().contains(String.valueOf(tutor.getId())));
     }
 
     @Test
     @DisplayName("7. Listagem retorna apenas os animais do tutor informado")
     void listagemRetornaApenasAnimaisDoTutor() {
-        // Cadastre dois tutores com animais distintos e verifique que a
-        // listagem de um deles nao inclui os animais do outro.
-        fail("Teste a ser escrito pelo aluno");
+        Tutor fabio = servico.cadastrarTutor(novoTutor("Fabio Melo", "66666666666"));
+        Tutor gabriela = servico.cadastrarTutor(novoTutor("Gabriela Reis", "77777777777"));
+        servico.cadastrarAnimal(fabio.getId(),
+                new Animal("Thor", "Cao", LocalDate.of(2020, 1, 5)));
+        servico.cadastrarAnimal(fabio.getId(),
+                new Animal("Nina", "Gato", LocalDate.of(2023, 4, 20)));
+        servico.cadastrarAnimal(gabriela.getId(),
+                new Animal("Bidu", "Cao", LocalDate.of(2019, 9, 1)));
+
+        List<Animal> animaisDoFabio = servico.listarAnimaisDoTutor(fabio.getId());
+
+        assertEquals(2, animaisDoFabio.size());
+        assertTrue(animaisDoFabio.stream()
+                .allMatch(animal -> animal.getTutor().getId().equals(fabio.getId())));
     }
 }
