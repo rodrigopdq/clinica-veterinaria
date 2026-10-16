@@ -52,7 +52,7 @@ public class ClinicaService {
         return tutorRepository.save(tutor);
     }
 
-        /** Remove o tutor apenas se nao houver animais vinculados. */
+    /** Remove o tutor apenas se nao houver animais vinculados. */
     @Transactional
     public void removerTutor(Long id) {
         Tutor tutor = buscarTutor(id);
@@ -75,7 +75,7 @@ public class ClinicaService {
 
     @Transactional(readOnly = true)
     public List<Animal> listarAnimaisDoTutor(Long tutorId) {
-        buscarTutor(tutorId);
+        garantirQueTutorExiste(tutorId);
         return animalRepository.findByTutorId(tutorId);
     }
 
@@ -86,9 +86,21 @@ public class ClinicaService {
 
     @Transactional
     public void removerAnimal(Long animalId) {
-        Animal animal = animalRepository.findById(animalId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Animal", animalId));
+        Animal animal = buscarAnimal(animalId);
         animal.getTutor().getAnimais().remove(animal);
         animalRepository.delete(animal);
+    }
+
+    // --- Auxiliares ---------------------------------------------------------
+
+    private Animal buscarAnimal(Long id) {
+        return animalRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Animal", id));
+    }
+
+    private void garantirQueTutorExiste(Long tutorId) {
+        if (!tutorRepository.existsById(tutorId)) {
+            throw new RecursoNaoEncontradoException("Tutor", tutorId);
+        }
     }
 }
